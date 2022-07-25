@@ -23,4 +23,9 @@ options.behav.fsample = 60;
 options.behav.movAvgWin = 100;
 options.behav.kernelPreSamples = 150;
 options.behav.kernelPostSamples = 150;
+options.behav.adjustPreSamples = 100;
+options.behav.adjustPostSamples = 500;
+options.behav.meanJumpSet = [-3 -2 -1.5 -1 -0.5 0.5 1 1.5 2 3]*20*pi/180;
+options.behav.varianceSet = [10 20 30]*pi/180;
+
 
