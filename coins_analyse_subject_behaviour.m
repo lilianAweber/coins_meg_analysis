@@ -255,4 +255,44 @@ for i= 1:size(avgScaledAdjustLow,1)
 end
 
 savefig(fh, details.analysis.behav.adjustJumpSizeStochasticityFig);
+
+
+% Plot for the interaction between volatility*jump size
+for iJumpSize = 1: numel(jumpSet)
+    adjustSetSta = staAdjusts(...
+        abs(staJumps-jumpSet(iJumpSize))<0.01, :);
+    if numel(adjustSetSta)>0
+        avgAdjustSta(iJumpSize, :) = nanmean(adjustSetSta);
+    else
+        avgAdjustSta(iJumpSize, :) = NaN(1, size(allAdjusts,2));
+    end
+    adjustSetVol = volAdjusts(...
+        abs(volJumps-jumpSet(iJumpSize))<0.01, :);
+    if numel(adjustSetVol)>0
+        avgAdjustVol(iJumpSize, :) = nanmean(adjustSetVol);
+    else
+        avgAdjustVol(iJumpSize, :) = NaN(1, size(allAdjusts,2));
+    end
+end
+
+for iJumpSize = 1: numel(jumpSet)
+    avgScaledAdjustSta(iJumpSize, :) = avgAdjustSta(iJumpSize, :) - avgAdjustSta(iJumpSize, options.behav.adjustPreSamples+1);
+    avgScaledAdjustVol(iJumpSize, :) = avgAdjustVol(iJumpSize, :) - avgAdjustVol(iJumpSize, options.behav.adjustPreSamples+1);
+end
+
+fh = figure;
+for i= 1:size(avgScaledAdjustSta,1)
+    subplot(1, 5, i)
+    plot(timeAxis,-avgScaledAdjustSta(i, :).*180/pi);
+    hold on
+    plot(timeAxis,-avgScaledAdjustVol(i, :).*180/pi);
+
+    yline(0, '--', 'color', [0.6 0.6 0.6])
+    legend('stable', 'volatile')
+    xlim([0 1]);
+    ylim([-1 5])
+    xlabel('time (s) relative to mean jump')
+    ylabel({'dist. from start position'})
+end
+
 end
