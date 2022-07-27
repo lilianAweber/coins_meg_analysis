@@ -4,7 +4,12 @@ function details = coins_subjects( subID, options )
 details.subjName = sprintf('sub%03.0f', subID);
 
 details.nSessions = 4;
-
+details.excludedBlocks = [];
+switch subID
+    case 3
+        details.excludedBlocks = [1 3]; % col1: sessID; col2: blockID
+end
+        
 details.raw.behav.folder = fullfile(options.rawDir, 'behav', details.subjName);
 details.raw.meg.folder = fullfile(options.rawDir, 'MEG', details.subjName);
 for iSess = 1: details.nSessions
@@ -32,7 +37,7 @@ details.analysis.behav.blockKernels = fullfile(details.analysis.behav.folder, ..
 details.analysis.behav.nResponses = fullfile(details.analysis.behav.folder, ...
     [details.subjName '_nResponses.mat']);
 details.analysis.behav.kernelConditionPlot = fullfile(details.analysis.behav.folder, ...
-    [details.subjName '_nResponses.mat']);
+    [details.subjName '_kernelsVolatility.fig']);
 
 details.analysis.behav.adjustments = fullfile(details.analysis.behav.folder, ...
     [details.subjName '_adjustments.mat']);
@@ -41,12 +46,16 @@ details.analysis.behav.adjustmentsVolatility = fullfile(details.analysis.behav.f
 
 details.analysis.behav.adjustVolatilityFig = fullfile(details.analysis.behav.folder, ...
     [details.subjName, '_meanAdjust2Volatility.fig']);
+details.analysis.behav.adjustVolatilityUnscaledFig = fullfile(details.analysis.behav.folder, ...
+    [details.subjName, '_meanAdjust2VolatilityUnscaled.fig']);
 details.analysis.behav.adjustNativeJumpSizeFig = fullfile(details.analysis.behav.folder, ...
     [details.subjName, '_meanAdjust2NativeJumpSize.fig']);
 details.analysis.behav.adjustJumpSizeOnsetsFig = fullfile(details.analysis.behav.folder, ...
     [details.subjName, '_meanAdjustOnset2JumpSize.fig']);
 details.analysis.behav.adjustJumpSizeStochasticityFig = fullfile(details.analysis.behav.folder, ...
     [details.subjName, '_meanAdjust2SizeAndStochasticity.fig']);
+details.analysis.behav.adjustJumpSizeVolatilityFig = fullfile(details.analysis.behav.folder, ...
+    [details.subjName, '_meanAdjust2SizeAndVolatility.fig']);
 
 end
 

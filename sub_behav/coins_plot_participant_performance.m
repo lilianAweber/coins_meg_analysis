@@ -1,4 +1,4 @@
-function coins_plot_participant_performance( perform )
+function fh = coins_plot_participant_performance( perform )
 
 
 allFields = fieldnames(perform{1,1});
@@ -10,7 +10,7 @@ for iM = 1:numel(allFields)
     end
 end
 
-figure;
+fh = figure;
 for iField = 1:numel(subFieldNames)
     [volValues, staValues, ~, p] = coins_compare_performance_across_conditions(perform, subFieldNames{iField});
     subplot(4, 6, iField)

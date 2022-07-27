@@ -19,10 +19,18 @@ options.pilotIDs = {'Ryan', 'Caroline', 'Karen', 'CarolineY'};
 options.conditionLabels = {'Stable', 'Volatile'};
 options.conditionIDs = 0:1;
 
+options.behav.flagLoadData = 0;
+options.behav.flagPerformance = 0;
+options.behav.flagKernels = 1;
+options.behav.flagNresponses = 0;
+options.behav.flagAdjustments = 0;
+
 options.behav.fsample = 60;
 options.behav.movAvgWin = 100;
-options.behav.kernelPreSamples = 150;
-options.behav.kernelPostSamples = 150;
+options.behav.kernelPreSamples = 2.5*options.behav.fsample;
+options.behav.kernelPostSamples = 1*options.behav.fsample;
+options.behav.flagBaselineCorrectKernels = 0;
+options.behav.nSamplesKernelBaseline = 1.5*options.behav.fsample;
 options.behav.adjustPreSamples = 100;
 options.behav.adjustPostSamples = 500;
 options.behav.meanJumpSet = [-3 -2 -1.5 -1 -0.5 0.5 1 1.5 2 3]*20*pi/180;

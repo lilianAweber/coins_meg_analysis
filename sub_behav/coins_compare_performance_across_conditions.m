@@ -5,12 +5,20 @@ volValues = [];
 staValues = [];
 for iSess = 1: 4
     for iBlock = 1:4
-        if perform{iSess,iBlock}.volatility == 1
-            volValues = [volValues; perform{iSess,iBlock}.(subFieldName)];
-        else
-            staValues = [staValues; perform{iSess, iBlock}.(subFieldName)];
+        if isfield(perform{iSess,iBlock}, subFieldName)
+            if perform{iSess,iBlock}.volatility == 1
+                volValues = [volValues; perform{iSess,iBlock}.(subFieldName)];
+            else
+                staValues = [staValues; perform{iSess, iBlock}.(subFieldName)];
+            end
         end
     end
+end
+nDiff = numel(staValues) - numel(volValues);
+if nDiff > 0
+    staValues(end-nDiff+1:end) = [];
+elseif nDiff < 0
+    volValues(end+nDiff+1:end) = [];
 end
 
 [h,p,ci,stats] = ttest(volValues, staValues);
