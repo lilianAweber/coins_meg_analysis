@@ -13,7 +13,7 @@ options.rawDir = fullfile(options.mainDir, 'rawData');
 options.workDir = fullfile(options.mainDir, 'analysis');
 %%%--------------------------------------------------------------------%%%
 
-options.subjectIDs = [1];
+options.subjectIDs = [1:9];
 options.pilotIDs = {'Ryan', 'Caroline', 'Karen', 'CarolineY'};
 
 options.conditionLabels = {'Stable', 'Volatile'};
@@ -35,6 +35,7 @@ options.behav.flagBaselineCorrectKernels = 0;
 options.behav.nSamplesKernelBaseline = 1.5*options.behav.fsample;
 options.behav.adjustPreSamples = 100;
 options.behav.adjustPostSamples = 500;
+options.behav.flagNormaliseAdjustments = 1;
 options.behav.meanJumpSet = [-3 -2 -1.5 -1 -0.5 0.5 1 1.5 2 3]*20*pi/180;
 options.behav.varianceSet = [10 20 30]*pi/180;
 options.behav.maxRtSamples = 2*options.behav.fsample; % distance between jump sizes is min=2s in volatile conditions

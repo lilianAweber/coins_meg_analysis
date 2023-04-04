@@ -68,7 +68,7 @@ if options.behav.flagKernels
             if ~isempty(excludedBlocks) && ismember([iSess iBlock], excludedBlocks, 'rows')
                 avgKernels(iSess, iBlock, :, :) = NaN(6, options.behav.kernelPreSamples + ...
                     options.behav.kernelPostSamples + 1);
-                nKernels(iSess, iBlock, :) = zeros(3, 1);
+                nKernels(iSess, iBlock, :) = 0;
             else
                 % compute integration kernels
                 [avgKernels(iSess, iBlock, :, :), nKernels(iSess, iBlock, :)] = ...
@@ -131,6 +131,7 @@ if options.behav.flagAdjustments
     allVars = [];
     volVars = [];
     staVars = [];
+    allConds = [];
     for iSess = 1: details.nSessions
         for iBlock = 1: 4
             blockData = subData(subData.sessID == iSess & subData.blockID == iBlock, :);
@@ -148,6 +149,7 @@ if options.behav.flagAdjustments
             allAdjusts = [allAdjusts; allAdjustments{iSess,iBlock}];
             allJumps = [allJumps; allJumpSizes{iSess,iBlock}];
             allVars = [allVars; allVariances{iSess,iBlock}];
+            allConds = [allConds; unique(blockData.volatility)*ones(numel(allJumpSizes{iSess,iBlock}),1)];
 
             if unique(blockData.volatility) == 1
                 volAdjusts = [volAdjusts; allAdjustments{iSess, iBlock}];
@@ -160,80 +162,107 @@ if options.behav.flagAdjustments
             end
         end
     end
-    save(details.analysis.behav.adjustments, 'allAdjusts', 'allJumps', 'allVars');
+    save(details.analysis.behav.adjustments, 'allAdjusts', 'allJumps', 'allVars', 'allConds');
     save(details.analysis.behav.adjustmentsVolatility, ...
         'staAdjusts', 'staJumps', 'staVars', 'volAdjusts', 'volJumps', 'volVars');
+    
+    
+    % Compute average / mean adjustments for this participant (to use in group
+    % analysis later)
+    jumpSizes = unique(allJumps);
+    variances = unique(allVars);
+    variances(isnan(variances)) = [];
+
+    % using the mean
+    meanAdjusts = NaN(3, 4, 5, 601);
+    for iJmp = 1: numel(jumpSizes)
+        meanAdjusts(1, 1, iJmp, :) = nanmean(allAdjusts(allJumps==jumpSizes(iJmp), :));
+        meanAdjusts(2, 1, iJmp, :) = nanmean(staAdjusts(staJumps==jumpSizes(iJmp), :));
+        meanAdjusts(3, 1, iJmp, :) = nanmean(volAdjusts(volJumps==jumpSizes(iJmp), :));
+
+        for iVar = 1: numel(variances)
+            meanAdjusts(1, 1+iVar, iJmp, :) = ...
+                nanmean(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
+            meanAdjusts(2, 1+iVar, iJmp, :) = ...
+                nanmean(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
+            meanAdjusts(3, 1+iVar, iJmp, :) = ...
+                nanmean(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
+        end
+    end
+    save(details.analysis.behav.meanAdjustments, 'meanAdjusts');
+
+    % using the median
+    medianAdjusts = NaN(3, 4, 5, 601);
+    for iJmp = 1: numel(jumpSizes)
+        medianAdjusts(1, 1, iJmp, :) = nanmedian(allAdjusts(allJumps==jumpSizes(iJmp), :));
+        medianAdjusts(2, 1, iJmp, :) = nanmedian(staAdjusts(staJumps==jumpSizes(iJmp), :));
+        medianAdjusts(3, 1, iJmp, :) = nanmedian(volAdjusts(volJumps==jumpSizes(iJmp), :));
+
+        for iVar = 1: numel(variances)
+            medianAdjusts(1, 1+iVar, iJmp, :) = ...
+                nanmedian(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
+            medianAdjusts(2, 1+iVar, iJmp, :) = ...
+                nanmedian(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
+            medianAdjusts(3, 1+iVar, iJmp, :) = ...
+                nanmedian(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
+        end
+    end
+    save(details.analysis.behav.medianAdjustments, 'medianAdjusts');
+
+    % Plot main effects for this subject
+    [fh1, fh2] = coins_plot_subject_adjustments(meanAdjusts, jumpSizes, options);
+
+    savefig(fh1, details.analysis.behav.adjustVolatilityFig);
+    savefig(fh2, details.analysis.behav.adjustNoiseFig);
+
+    [fh1, fh2] = coins_plot_subject_adjustments(medianAdjusts, jumpSizes, options);
+
+    savefig(fh1, details.analysis.behav.adjustMedianVolatilityFig);
+    savefig(fh2, details.analysis.behav.adjustMedianNoiseFig);
 else
     load(details.analysis.behav.adjustments, 'allAdjusts', 'allJumps', 'allVars');
     load(details.analysis.behav.adjustmentsVolatility, ...
         'staAdjusts', 'staJumps', 'staVars', 'volAdjusts', 'volJumps', 'volVars');
+    load(details.analysis.behav.meanAdjustments, 'meanAdjusts');
+    load(details.analysis.behav.medianAdjustments, 'medianAdjusts');
 end
 
-% Compute average / mean adjustments for this participant (to use in group
-% analysis later)
-jumpSizes = unique(allJumps);
-variances = unique(allVars);
 
-% using the mean
-meanAdjusts = NaN(3, 4, 5, 601);
+
+%{
+is done within plotting now: normalising adjustments
 for iJmp = 1: numel(jumpSizes)
-    meanAdjusts(1, 1, iJmp, :) = nanmean(allAdjusts(allJumps==jumpSizes(iJmp), :));
-    meanAdjusts(2, 1, iJmp, :) = nanmean(staAdjusts(staJumps==jumpSizes(iJmp), :));
-    meanAdjusts(3, 1, iJmp, :) = nanmean(volAdjusts(volJumps==jumpSizes(iJmp), :));
-    
-    for iVar = 1: numel(variances)
-        meanAdjusts(1, 1+iVar, iJmp, :) = ...
-            nanmean(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
-        meanAdjusts(2, 1+iVar, iJmp, :) = ...
-            nanmean(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
-        meanAdjusts(3, 1+iVar, iJmp, :) = ...
-            nanmean(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
+    for iCon = 1:3
+        for iVar = 1:numel(variances)
+            normMedianAdjusts(iCon, iVar, iJmp, :) = ...
+                squeeze(medianAdjusts(iCon, iVar, iJmp, :)) - ...
+                squeeze(medianAdjusts(iCon, iVar ,iJmp, pre+1));
+            normMeanAdjusts(iCon, iVar, iJmp, :) = ...
+                squeeze(meanAdjusts(iCon, iVar, iJmp, :)) - ...
+                squeeze(meanAdjusts(iCon, iVar ,iJmp, pre+1));
+        end
     end
 end
-save(details.analysis.behav.meanAdjustments, 'meanAdjusts');
+%}
+%     medAdjustStaLo(iJmp, :) = squeeze(medianAdjusts(2,2,iJmp,:)) - squeeze(medianAdjusts(2,2,iJmp,pre+1));
+%     medAdjustStaMe(iJmp, :) = squeeze(medianAdjusts(2,3,iJmp,:)) - squeeze(medianAdjusts(2,3,iJmp,pre+1));
+%     medAdjustStaHi(iJmp, :) = squeeze(medianAdjusts(2,4,iJmp,:)) - squeeze(medianAdjusts(2,4,iJmp,pre+1));
+%     medAdjustVolLo(iJmp, :) = squeeze(medianAdjusts(3,2,iJmp,:)) - squeeze(medianAdjusts(3,2,iJmp,pre+1));
+%     medAdjustVolMe(iJmp, :) = squeeze(medianAdjusts(3,3,iJmp,:)) - squeeze(medianAdjusts(3,3,iJmp,pre+1));
+%     medAdjustVolHi(iJmp, :) = squeeze(medianAdjusts(3,4,iJmp,:)) - squeeze(medianAdjusts(3,4,iJmp,pre+1));
+%     
+%     menAdjustStaLo(iJmp, :) = squeeze(meanAdjusts(2,2,iJmp,:)) - squeeze(meanAdjusts(2,2,iJmp,pre+1));
+%     menAdjustStaMe(iJmp, :) = squeeze(meanAdjusts(2,3,iJmp,:)) - squeeze(meanAdjusts(2,3,iJmp,pre+1));
+%     menAdjustStaHi(iJmp, :) = squeeze(meanAdjusts(2,4,iJmp,:)) - squeeze(meanAdjusts(2,4,iJmp,pre+1));
+%     menAdjustVolLo(iJmp, :) = squeeze(meanAdjusts(3,2,iJmp,:)) - squeeze(meanAdjusts(3,2,iJmp,pre+1));
+%     menAdjustVolMe(iJmp, :) = squeeze(meanAdjusts(3,3,iJmp,:)) - squeeze(meanAdjusts(3,3,iJmp,pre+1));
+%     menAdjustVolHi(iJmp, :) = squeeze(meanAdjusts(3,4,iJmp,:)) - squeeze(meanAdjusts(3,4,iJmp,pre+1));
+% end
 
-% using the median
-medianAdjusts = NaN(3, 4, 5, 601);
-for iJmp = 1: numel(jumpSizes)
-    medianAdjusts(1, 1, iJmp, :) = nanmedian(allAdjusts(allJumps==jumpSizes(iJmp), :));
-    medianAdjusts(2, 1, iJmp, :) = nanmedian(staAdjusts(staJumps==jumpSizes(iJmp), :));
-    medianAdjusts(3, 1, iJmp, :) = nanmedian(volAdjusts(volJumps==jumpSizes(iJmp), :));
-    
-    for iVar = 1: numel(variances)
-        medianAdjusts(1, 1+iVar, iJmp, :) = ...
-            nanmedian(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
-        medianAdjusts(2, 1+iVar, iJmp, :) = ...
-            nanmedian(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
-        medianAdjusts(3, 1+iVar, iJmp, :) = ...
-            nanmedian(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
-    end
-end
-save(details.analysis.behav.medianAdjustments, 'medianAdjusts');
 
-pre = options.behav.adjustPreSamples;
-post = options.behav.adjustPostSamples;
-fsmp = options.behav.fsample;
-timeAxis = [-pre/fsmp: 1/fsmp : post/fsmp];
 
-% Normalise adjustments
-jumpSizes = unique(allJumps);
 
-for iJmp = 1: numel(jumpSizes)
-    medAdjustStaLo(iJmp, :) = squeeze(medianAdjusts(2,2,iJmp,:)) - squeeze(medianAdjusts(2,2,iJmp,pre+1));
-    medAdjustStaMe(iJmp, :) = squeeze(medianAdjusts(2,3,iJmp,:)) - squeeze(medianAdjusts(2,3,iJmp,pre+1));
-    medAdjustStaHi(iJmp, :) = squeeze(medianAdjusts(2,4,iJmp,:)) - squeeze(medianAdjusts(2,4,iJmp,pre+1));
-    medAdjustVolLo(iJmp, :) = squeeze(medianAdjusts(3,2,iJmp,:)) - squeeze(medianAdjusts(3,2,iJmp,pre+1));
-    medAdjustVolMe(iJmp, :) = squeeze(medianAdjusts(3,3,iJmp,:)) - squeeze(medianAdjusts(3,3,iJmp,pre+1));
-    medAdjustVolHi(iJmp, :) = squeeze(medianAdjusts(3,4,iJmp,:)) - squeeze(medianAdjusts(3,4,iJmp,pre+1));
-    
-    menAdjustStaLo(iJmp, :) = squeeze(meanAdjusts(2,2,iJmp,:)) - squeeze(meanAdjusts(2,2,iJmp,pre+1));
-    menAdjustStaMe(iJmp, :) = squeeze(meanAdjusts(2,3,iJmp,:)) - squeeze(meanAdjusts(2,3,iJmp,pre+1));
-    menAdjustStaHi(iJmp, :) = squeeze(meanAdjusts(2,4,iJmp,:)) - squeeze(meanAdjusts(2,4,iJmp,pre+1));
-    menAdjustVolLo(iJmp, :) = squeeze(meanAdjusts(3,2,iJmp,:)) - squeeze(meanAdjusts(3,2,iJmp,pre+1));
-    menAdjustVolMe(iJmp, :) = squeeze(meanAdjusts(3,3,iJmp,:)) - squeeze(meanAdjusts(3,3,iJmp,pre+1));
-    menAdjustVolHi(iJmp, :) = squeeze(meanAdjusts(3,4,iJmp,:)) - squeeze(meanAdjusts(3,4,iJmp,pre+1));
-end
-
+%{
 % Volatility (low noise)
 figure; 
 pSL = plot(timeAxis, menAdjustStaLo', 'linewidth', 2);
@@ -352,6 +381,7 @@ fh = coins_plot_subject_raw_adjustments_volatility(normStaAdjusts, ...
     normVolAdjusts, staJumps, volJumps, 'mean', options);
 fh = coins_plot_subject_raw_adjustments_volatility(normStaAdjusts, ...
     normVolAdjusts, staJumps, volJumps, 'median', options);
+%}
 
 %{
 % Main effect of volatility - average across traces and jumpSizes
