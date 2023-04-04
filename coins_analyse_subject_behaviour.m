@@ -31,6 +31,7 @@ if options.behav.flagPerformance
                 coins_compute_trackingPerformance(blockData, options);
         end
     end
+    close all
     save(details.analysis.behav.performance, 'stim', 'perform');
 else
     load(details.analysis.behav.performance, 'perform');
@@ -44,8 +45,8 @@ excludedBlocks = details.excludedBlocks;
 for iEx = 1: size(excludedBlocks, 1)
     perform{excludedBlocks(iEx, 1), excludedBlocks(iEx, 2)} = [];
 end
-%fh = coins_plot_participant_performance(perform);
-%savefig(fh, details.analysis.behav.performancePlot);
+fh = coins_plot_participant_performance(perform);
+savefig(fh, details.analysis.behav.performancePlot);
 
 %% Integration kernels (simple averaging method)
 if options.behav.flagKernels
@@ -53,12 +54,11 @@ if options.behav.flagKernels
     for iSess = 1: details.nSessions
         for iBlock = 1: 4
             blockData = subData(subData.sessID == iSess & subData.blockID == iBlock, :);
-            
             % check whether current block is excluded
             if ~isempty(excludedBlocks) && ismember([iSess iBlock], excludedBlocks, 'rows')
                 avgKernels(iSess, iBlock, :, :) = NaN(6, options.behav.kernelPreSamples + ...
                     options.behav.kernelPostSamples + 1);
-                nKernels(iSess, iBlock, :) = zeros(2, 1);
+                nKernels(iSess, iBlock, :) = zeros(3, 1);
             else
                 % compute integration kernels
                 [avgKernels(iSess, iBlock, :, :), nKernels(iSess, iBlock, :)] = ...
@@ -81,13 +81,17 @@ if options.behav.flagKernels
     % Compute number of responses (as used for the kernels)
     % I think this is duplicate of what we do in the performance script
     nMoveKernels = squeeze(nKernels(:, :, 1));
-    nSizeKernels = squeeze(nKernels(:, :, 2));
+    nSizeKernelsUp = squeeze(nKernels(:, :, 2));
+    nSizeKernelsDown = squeeze(nKernels(:, :, 3));
     nResponses.move = sum(sum(nMoveKernels));
-    nResponses.size = sum(sum(nSizeKernels));
+    nResponses.sizeUp = sum(sum(nSizeKernelsUp));
+    nResponses.sizeDown = sum(sum(nSizeKernelsDown));
     nResponses.volatile.move = sum(sum(nMoveKernels(conditionLabels==1)));
-    nResponses.volatile.size = sum(sum(nSizeKernels(conditionLabels==1)));
+    nResponses.volatile.sizeUp = sum(sum(nSizeKernelsUp(conditionLabels==1)));
+    nResponses.volatile.sizeDown = sum(sum(nSizeKernelsDown(conditionLabels==1)));
     nResponses.stable.move = sum(sum(nMoveKernels(conditionLabels==0)));
-    nResponses.stable.size = sum(sum(nSizeKernels(conditionLabels==0)));
+    nResponses.stable.sizeUp = sum(sum(nSizeKernelsUp(conditionLabels==0)));
+    nResponses.stable.sizeDown = sum(sum(nSizeKernelsDown(conditionLabels==0)));
     save(details.analysis.behav.nResponses, 'nResponses');
 else
     load(details.analysis.behav.blockKernels, 'volKernels', 'staKernels');
@@ -95,48 +99,10 @@ else
 end
 
 % Plot volatile versus stable block kernels
-fh = figure;
-timeAxis = [-options.behav.kernelPreSamples : ...
-    options.behav.kernelPostSamples]/options.behav.fsample;
-
-volaKerns = nanmean(squeeze(nanmean(volKernels(:, :, 1, :),1)),1);
-stabKerns = nanmean(squeeze(nanmean(staKernels(:, :, 1, :),1)),1);
-if options.behav.flagBaselineCorrectKernels
-    volaBase = nanmean(volaKerns(1, 1:options.behav.nSamplesKernelBaseline));
-    stabBase = nanmean(stabKerns(1, 1:options.behav.nSamplesKernelBaseline));
-    %volaBase = max(volaKerns);
-    %stabBase = max(stabKerns);
-    volaKerns = volaKerns - volaBase;
-    stabKerns = stabKerns - stabBase;
-    %volaKerns = volaKerns/volaBase;
-    %stabKerns = stabKerns/stabBase;
-end    
-
-subplot(2, 1, 1); 
-% signed PEs preceding movements
-plot(timeAxis, volaKerns, 'color', col.volatile)
-hold on
-plot(timeAxis, stabKerns, 'color', col.stable)
-xlabel('time (s) around button press')
-ylabel('signed PE')
-yline(0)
-title('Average signed PEs leading up to shield movement onset')
-legend(['volatile blocks (N=' num2str(nResponses.volatile.move) ')'], ...
-    ['stable blocks (N=' num2str(nResponses.stable.move) ')']);
-
-subplot(2, 1, 2); 
-% abs PEs preceding size updates
-plot(timeAxis, nanmean(squeeze(nanmean(volKernels(:, :, 2, :),1)),1))
-hold on
-plot(timeAxis, nanmean(squeeze(nanmean(staKernels(:, :, 2, :),1)),1))
-xlabel('time (s) around button press')
-ylabel('absolute PE')
-title('Average absolute PEs leading up to shield size update')
-legend(['volatile blocks (N=' num2str(nResponses.volatile.size) ')'], ...
-    ['stable blocks (N=' num2str(nResponses.stable.size) ')']);
-
+fh = coins_plot_subject_kernels_by_volatility(staKernels, volKernels, ...
+    nResponses, options);
 savefig(fh, details.analysis.behav.kernelConditionPlot)
-%{
+
 %% Post mean jump adjustments
 if options.behav.flagAdjustments
     % Go through data block-wise, extract adjustments
@@ -187,28 +153,197 @@ else
         'staAdjusts', 'staJumps', 'staVars', 'volAdjusts', 'volJumps', 'volVars');
 end
 
-% Plot for the effect of volatility
-%{
-scStaAdjusts = staAdjusts;
-for iAdj = 1: size(staAdjusts,1)
-    scStaAdjusts(iAdj, options.behav.adjustPreSamples+1:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples) = ...
-    scStaAdjusts(iAdj, options.behav.adjustPreSamples+1:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples)/staJumps(iAdj);
-end
+% Compute average / mean adjustments for this participant (to use in group
+% analysis later)
+jumpSizes = unique(allJumps);
+variances = unique(allVars);
+
+% using the mean
+meanAdjusts = NaN(3, 4, 5, 601);
+for iJmp = 1: numel(jumpSizes)
+    meanAdjusts(1, 1, iJmp, :) = nanmean(allAdjusts(allJumps==jumpSizes(iJmp), :));
+    meanAdjusts(2, 1, iJmp, :) = nanmean(staAdjusts(staJumps==jumpSizes(iJmp), :));
+    meanAdjusts(3, 1, iJmp, :) = nanmean(volAdjusts(volJumps==jumpSizes(iJmp), :));
     
-scaledStaAdjusts(:, options.behav.adjustPreSamples:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples+1) = ...
-    scaledStaAdjusts(:, options.behav.adjustPreSamples:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples+1)./staJumps;
-scaledVolAdjusts = volAdjusts;
-scaledVolAdjusts(:, options.behav.adjustPreSamples:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples+1) = ...
-    scaledVolAdjusts(:, options.behav.adjustPreSamples:...
-    options.behav.adjustPreSamples+options.behav.adjustPostSamples+1)./volJumps;
+    for iVar = 1: numel(variances)
+        meanAdjusts(1, 1+iVar, iJmp, :) = ...
+            nanmean(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
+        meanAdjusts(2, 1+iVar, iJmp, :) = ...
+            nanmean(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
+        meanAdjusts(3, 1+iVar, iJmp, :) = ...
+            nanmean(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
+    end
+end
+save(details.analysis.behav.meanAdjustments, 'meanAdjusts');
 
-%}
+% using the median
+medianAdjusts = NaN(3, 4, 5, 601);
+for iJmp = 1: numel(jumpSizes)
+    medianAdjusts(1, 1, iJmp, :) = nanmedian(allAdjusts(allJumps==jumpSizes(iJmp), :));
+    medianAdjusts(2, 1, iJmp, :) = nanmedian(staAdjusts(staJumps==jumpSizes(iJmp), :));
+    medianAdjusts(3, 1, iJmp, :) = nanmedian(volAdjusts(volJumps==jumpSizes(iJmp), :));
+    
+    for iVar = 1: numel(variances)
+        medianAdjusts(1, 1+iVar, iJmp, :) = ...
+            nanmedian(allAdjusts(allJumps==jumpSizes(iJmp) & allVars==variances(iVar), :));
+        medianAdjusts(2, 1+iVar, iJmp, :) = ...
+            nanmedian(staAdjusts(staJumps==jumpSizes(iJmp) & staVars==variances(iVar), :));
+        medianAdjusts(3, 1+iVar, iJmp, :) = ...
+            nanmedian(volAdjusts(volJumps==jumpSizes(iJmp) & volVars==variances(iVar), :));
+    end
+end
+save(details.analysis.behav.medianAdjustments, 'medianAdjusts');
 
+pre = options.behav.adjustPreSamples;
+post = options.behav.adjustPostSamples;
+fsmp = options.behav.fsample;
+timeAxis = [-pre/fsmp: 1/fsmp : post/fsmp];
+
+% Normalise adjustments
+jumpSizes = unique(allJumps);
+
+for iJmp = 1: numel(jumpSizes)
+    medAdjustStaLo(iJmp, :) = squeeze(medianAdjusts(2,2,iJmp,:)) - squeeze(medianAdjusts(2,2,iJmp,pre+1));
+    medAdjustStaMe(iJmp, :) = squeeze(medianAdjusts(2,3,iJmp,:)) - squeeze(medianAdjusts(2,3,iJmp,pre+1));
+    medAdjustStaHi(iJmp, :) = squeeze(medianAdjusts(2,4,iJmp,:)) - squeeze(medianAdjusts(2,4,iJmp,pre+1));
+    medAdjustVolLo(iJmp, :) = squeeze(medianAdjusts(3,2,iJmp,:)) - squeeze(medianAdjusts(3,2,iJmp,pre+1));
+    medAdjustVolMe(iJmp, :) = squeeze(medianAdjusts(3,3,iJmp,:)) - squeeze(medianAdjusts(3,3,iJmp,pre+1));
+    medAdjustVolHi(iJmp, :) = squeeze(medianAdjusts(3,4,iJmp,:)) - squeeze(medianAdjusts(3,4,iJmp,pre+1));
+    
+    menAdjustStaLo(iJmp, :) = squeeze(meanAdjusts(2,2,iJmp,:)) - squeeze(meanAdjusts(2,2,iJmp,pre+1));
+    menAdjustStaMe(iJmp, :) = squeeze(meanAdjusts(2,3,iJmp,:)) - squeeze(meanAdjusts(2,3,iJmp,pre+1));
+    menAdjustStaHi(iJmp, :) = squeeze(meanAdjusts(2,4,iJmp,:)) - squeeze(meanAdjusts(2,4,iJmp,pre+1));
+    menAdjustVolLo(iJmp, :) = squeeze(meanAdjusts(3,2,iJmp,:)) - squeeze(meanAdjusts(3,2,iJmp,pre+1));
+    menAdjustVolMe(iJmp, :) = squeeze(meanAdjusts(3,3,iJmp,:)) - squeeze(meanAdjusts(3,3,iJmp,pre+1));
+    menAdjustVolHi(iJmp, :) = squeeze(meanAdjusts(3,4,iJmp,:)) - squeeze(meanAdjusts(3,4,iJmp,pre+1));
+end
+
+% Volatility (low noise)
+figure; 
+pSL = plot(timeAxis, menAdjustStaLo', 'linewidth', 2);
+hold on, 
+pVL = plot(timeAxis, menAdjustVolLo', '--', 'linewidth', 2);
+
+set(gca,'ColorOrder',colormap(lines(5)))
+jumpSizes = [10 20 30 40 60]*pi/180;
+for i=1:numel(jumpSizes)
+    yline(jumpSizes(i))
+end
+yline(0)
+xline(0)
+legend([pSL(end), pVL(end)], 'stable, low noise', 'volatile, low noise')
+xlim([-1 8])
+xlabel('time from stim mean jump (s)')
+ylabel('median shield position (avg over change points)')
+title('Volatility (low noise) * JumpSize - start at 0')
+
+% Volatility (medium noise)
+figure; 
+pSL = plot(timeAxis, menAdjustStaMe');
+hold on, 
+pVL = plot(timeAxis, menAdjustVolMe', '--');
+
+set(gca,'ColorOrder',colormap(lines(5)))
+jumpSizes = [10 20 30 40 60]*pi/180;
+for i=1:numel(jumpSizes)
+    yline(jumpSizes(i))
+end
+yline(0)
+xline(0)
+legend([pSL(end), pVL(end)], 'stable, medium noise', 'volatile, medium noise')
+xlim([-1 8])
+xlabel('time from stim mean jump (s)')
+ylabel('median shield position (avg over change points)')
+title('Volatility (medium noise) * JumpSize - start at 0')
+
+% Volatility (high noise)
+figure; 
+pSL = plot(timeAxis, menAdjustStaHi');
+hold on, 
+pVL = plot(timeAxis, menAdjustVolHi', '--');
+
+set(gca,'ColorOrder',colormap(lines(5)))
+jumpSizes = [10 20 30 40 60]*pi/180;
+for i=1:numel(jumpSizes)
+    yline(jumpSizes(i))
+end
+yline(0)
+xline(0)
+legend([pSL(end), pVL(end)], 'stable, high noise', 'volatile, high noise')
+xlim([-1 8])
+xlabel('time from stim mean jump (s)')
+ylabel('median shield position (avg over change points)')
+title('Volatility (high noise) * JumpSize - start at 0')
+
+% Noise (stable)
+figure; 
+pSL = plot(timeAxis, menAdjustStaLo', 'linewidth', 2);
+hold on, 
+pVL = plot(timeAxis, menAdjustStaHi');
+
+set(gca,'ColorOrder',colormap(lines(5)))
+jumpSizes = [10 20 30 40 60]*pi/180;
+for i=1:numel(jumpSizes)
+    yline(jumpSizes(i))
+end
+yline(0)
+xline(0)
+legend([pSL(end), pVL(end)], 'stable, low noise', 'stable, high noise')
+xlim([-1 8])
+xlabel('time from stim mean jump (s)')
+ylabel('median shield position (avg over change points)')
+title('Noise (stable) * JumpSize - start at 0')
+
+% Noise (volatile)
+figure; 
+pSL = plot(timeAxis, menAdjustVolLo', '--', 'linewidth', 2);
+hold on, 
+pVL = plot(timeAxis, menAdjustVolHi', '--');
+
+set(gca,'ColorOrder',colormap(lines(5)))
+jumpSizes = [10 20 30 40 60]*pi/180;
+for i=1:numel(jumpSizes)
+    yline(jumpSizes(i))
+end
+yline(0)
+xline(0)
+legend([pSL(end), pVL(end)], 'volatile, low noise', 'volatile, high noise')
+xlim([-1 8])
+xlabel('time from stim mean jump (s)')
+ylabel('median shield position (avg over change points)')
+title('Noise (volatile) * JumpSize - start at 0')
+
+
+% Volatility * JumpSize - individual traces
+% raw adjustments
+fh = coins_plot_subject_raw_adjustments_volatility(staAdjusts, volAdjusts, ...
+    staJumps, volJumps, 'mean', options);
+fh = coins_plot_subject_raw_adjustments_volatility(staAdjusts, volAdjusts, ...
+    staJumps, volJumps, 'median', options);
+% normalised for start position for comparing onset
+normStaAdjusts = staAdjusts;
+for iJump = 1: size(staAdjusts, 1)
+    normStaAdjusts(iJump, :) = normStaAdjusts(iJump, :) - ...
+        normStaAdjusts(iJump, options.behav.adjustPreSamples);
+end
+normVolAdjusts = volAdjusts;
+for iJump = 1: size(volAdjusts, 1)
+    normVolAdjusts(iJump, :) = normVolAdjusts(iJump, :) - ...
+        normVolAdjusts(iJump, options.behav.adjustPreSamples);
+end
+
+fh = coins_plot_subject_raw_adjustments_volatility(normStaAdjusts, ...
+    normVolAdjusts, staJumps, volJumps, 'mean', options);
+fh = coins_plot_subject_raw_adjustments_volatility(normStaAdjusts, ...
+    normVolAdjusts, staJumps, volJumps, 'median', options);
+
+%{
+% Main effect of volatility - average across traces and jumpSizes
+fh = coins_plot_subject_adjustments_volatility(staAdjusts, volAdjusts, ...
+    false, options);
+savefig(fh, details.analysis.behav.adjustVolatilityUnscaledFig);
+
+% normalised for jump size
 scaledStaAdjusts = staAdjusts;
 scaledStaAdjusts = ...
     scaledStaAdjusts./staJumps;
@@ -216,57 +351,12 @@ scaledVolAdjusts = volAdjusts;
 scaledVolAdjusts = ...
     scaledVolAdjusts./volJumps;
 
-avgScVol = nanmean(scaledVolAdjusts,1);
-avgScSta = nanmean(scaledStaAdjusts,1);
-semScVol = nanstd(scaledVolAdjusts, 1)/sqrt(size(scaledVolAdjusts, 1));
-semScSta = nanstd(scaledStaAdjusts, 1)/sqrt(size(scaledStaAdjusts, 1));
-
-avgVol = nanmean(volAdjusts, 1);
-avgSta = nanmean(staAdjusts, 1);
-semVol = nanstd(volAdjusts, 1)/sqrt(size(volAdjusts, 1));
-semSta = nanstd(staAdjusts, 1)/sqrt(size(staAdjusts, 1));
-
-timeAxis = [-options.behav.adjustPreSamples:options.behav.adjustPostSamples]./60;
-
-fh = figure; 
-plot(timeAxis,avgScSta, 'color', col.stable);
-hold on, 
-plot(timeAxis,avgScSta+semScSta, 'color', [0.3 0.3 1]);
-plot(timeAxis,avgScSta-semScSta, 'color', [0.3 0.3 1]);
-plot(timeAxis,avgScVol, 'color', col.volatile);
-plot(timeAxis,avgScVol+semScVol, 'color', [1 0.3 0.3]);
-plot(timeAxis,avgScVol-semScVol, 'color', [1 0.3 0.3]);
-
-yline(1, '--', 'color', [0.6 0.6 0.6])
-yline(0, '--', 'color', [0.6 0.6 0.6])
-xline(0, '--', 'color', [0.6 0.6 0.6])
-
-xlabel('time (s) relative to mean jump')
-ylabel('distance from previous mean in units of mean jump')
-legend('stable blocks', '+1SEM', '-1SEM', 'volatile blocks', '+1SEM', '-1SEM', 'location', 'southeast')
-title({'Effect of volatility on mean size adjustments', ...
-    'Mean scaled position adjustments after mean jumps'})
+fh = coins_plot_subject_adjustments_volatility(scaledStaAdjusts, scaledVolAdjusts, ...
+    true, options);
 savefig(fh, details.analysis.behav.adjustVolatilityFig);
 
-fh = figure; 
-plot(timeAxis,avgSta, 'color', col.stable);
-hold on, 
-plot(timeAxis,avgSta+semSta, 'color', [0.3 0.3 1]);
-plot(timeAxis,avgSta-semSta, 'color', [0.3 0.3 1]);
-plot(timeAxis,avgVol, 'color', col.volatile);
-plot(timeAxis,avgVol+semVol, 'color', [1 0.3 0.3]);
-plot(timeAxis,avgVol-semVol, 'color', [1 0.3 0.3]);
 
-yline(0, '--', 'color', [0.6 0.6 0.6])
-xline(0, '--', 'color', [0.6 0.6 0.6])
-xlabel('time (s) relative to mean jump')
-ylabel('distance from previous mean in radians')
-legend('stable blocks', '+1SEM', '-1SEM', 'volatile blocks', '+1SEM', '-1SEM', 'location', 'southeast')
-title('Effect of volatility on mean size adjustments')
-savefig(fh, details.analysis.behav.adjustVolatilityUnscaledFig);
-
-
-% Plot for the effect of jump size - native sizes
+% Main effect of jump size - native sizes
 allJumpsDeg = round(allJumps*180/pi);
 jumpSet = unique(round(allJumps,2));
 
@@ -274,6 +364,7 @@ for iJumpSize = 1: numel(jumpSet)
     adjustSet = allAdjusts(abs(allJumps-jumpSet(iJumpSize))<0.01,:);
     avgAdjust(iJumpSize, :) = nanmean(adjustSet);
 end
+timeAxis = [-options.behav.adjustPreSamples:options.behav.adjustPostSamples]./options.behav.fsample;
 
 fh = figure;
 plot(timeAxis,avgAdjust);
@@ -326,7 +417,7 @@ title('Zoom: Onset of adjustment')
 
 savefig(fh, details.analysis.behav.adjustJumpSizeOnsetsFig);
 
-% Plot for the interaction between stochasticity*jump size
+% Interaction between stochasticity*jump size
 % split all variables into 3 levels of stochasticity
 for iJumpSize = 1: numel(jumpSet)
     adjustSetLow = allAdjusts(...
@@ -450,6 +541,11 @@ for i= 1:size(avgScaledAdjustSta,1)
     ylabel({'dist. from start position'})
 end
 savefig(fh, details.analysis.behav.adjustJumpSizeVolatilityFig);
+
 %}
+%% Post mean jump reaction times
+if options.behav.flagReactionTimes
+    coins_analyse_subject_reactionTimes( subID, options );
+end
 
 end

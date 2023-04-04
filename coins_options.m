@@ -19,11 +19,11 @@ options.pilotIDs = {'Ryan', 'Caroline', 'Karen', 'CarolineY'};
 options.conditionLabels = {'Stable', 'Volatile'};
 options.conditionIDs = 0:1;
 
-options.behav.flagLoadData = 0;
-options.behav.flagPerformance = 0;
+options.behav.flagLoadData = 1;
+options.behav.flagPerformance = 1;
 options.behav.flagKernels = 1;
-options.behav.flagNresponses = 0;
-options.behav.flagAdjustments = 0;
+options.behav.flagAdjustments = 1;
+options.behav.flagReactionTimes = 1;
 
 options.behav.fsample = 60;
 options.behav.movAvgWin = 100;
@@ -35,5 +35,7 @@ options.behav.adjustPreSamples = 100;
 options.behav.adjustPostSamples = 500;
 options.behav.meanJumpSet = [-3 -2 -1.5 -1 -0.5 0.5 1 1.5 2 3]*20*pi/180;
 options.behav.varianceSet = [10 20 30]*pi/180;
+options.behav.maxRtSamples = 2*options.behav.fsample; % distance between jump sizes is min=2s in volatile conditions
 
+options.meg.triggers = coins_meg_trigger_list;
 

@@ -44,6 +44,13 @@ for iDown = 1: numel(startDown)
     allKernelsDown = [allKernelsDown; absPeTrace(startDown(iDown) : startDown(iDown)+nSamplesTotal)]; 
 end
 
+if isempty(allKernelsUp)
+    allKernelsUp = NaN(1, size(allKernelsLeft, 2));
+end
+if isempty(allKernelsDown)
+    allKernelsDown = NaN(1, size(allKernelsLeft, 2));
+end
+
 moveKernels = [allKernelsLeft; -allKernelsRight];
 sizeKernels = [allKernelsUp; -allKernelsDown];
 
@@ -51,7 +58,7 @@ avgKernels = [nanmean(moveKernels, 1); nanmean(sizeKernels, 1); ...
                 nanmean(allKernelsLeft, 1); nanmean(allKernelsLeft, 1); ...
                 nanmean(allKernelsUp, 1); nanmean(allKernelsDown, 1)];
 
-nKernels = [size(moveKernels, 1); size(sizeKernels, 1)];
+nKernels = [size(moveKernels, 1); size(allKernelsUp, 1); size(allKernelsDown, 1)];
 
 %moveKernels(:, :) = allKernelsMove;
 %sizeKernels(:, :) = allKernelsSize;
