@@ -30,7 +30,8 @@ ylabel('signed PE')
 yline(0)
 title('Average signed PEs leading up to shield movement onset')
 legend(['volatile blocks (N=' num2str(nResponses.volatile.move) ')'], ...
-    ['stable blocks (N=' num2str(nResponses.stable.move) ')']);
+    ['stable blocks (N=' num2str(nResponses.stable.move) ')'], ...
+    'location', 'northwest');
 
 
 volaKernsUp = nanmean(squeeze(nanmean(volKernels(:, :, 5, :),1)),1);
@@ -52,7 +53,8 @@ title('Average absolute PEs leading up to shield size update')
 legend(['volatile blocks: up (N=' num2str(nResponses.volatile.sizeUp) ')'], ...
     ['volatile blocks: down (N=' num2str(nResponses.volatile.sizeDown) ')'], ...
     ['stable blocks: up (N=' num2str(nResponses.stable.sizeUp) ')'], ...
-    ['stable blocks: down(N=' num2str(nResponses.stable.sizeDown) ')']);
+    ['stable blocks: down(N=' num2str(nResponses.stable.sizeDown) ')'], ...
+    'location', 'northwest');
 
 
 end

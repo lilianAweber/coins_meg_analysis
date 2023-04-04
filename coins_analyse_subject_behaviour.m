@@ -91,15 +91,21 @@ if options.behav.flagKernels
     % Compute number of responses (as used for the kernels)
     % I think this is duplicate of what we do in the performance script
     nMoveKernels = squeeze(nKernels(:, :, 1));
-    nSizeKernelsUp = squeeze(nKernels(:, :, 2));
-    nSizeKernelsDown = squeeze(nKernels(:, :, 3));
+    nSizeKernels = squeeze(nKernels(:, :, 2));
+    nMoveKernelsLeft = squeeze(nKernels(:, :, 3));
+    nMoveKernelsRight = squeeze(nKernels(:, :, 4));
+    nSizeKernelsUp = squeeze(nKernels(:, :, 5));
+    nSizeKernelsDown = squeeze(nKernels(:, :, 6));
     nResponses.move = sum(sum(nMoveKernels));
+    nResponses.size = sum(sum(nSizeKernels));
     nResponses.sizeUp = sum(sum(nSizeKernelsUp));
     nResponses.sizeDown = sum(sum(nSizeKernelsDown));
     nResponses.volatile.move = sum(sum(nMoveKernels(conditionLabels==1)));
+    nResponses.volatile.size = sum(sum(nSizeKernels(conditionLabels==1)));
     nResponses.volatile.sizeUp = sum(sum(nSizeKernelsUp(conditionLabels==1)));
     nResponses.volatile.sizeDown = sum(sum(nSizeKernelsDown(conditionLabels==1)));
     nResponses.stable.move = sum(sum(nMoveKernels(conditionLabels==0)));
+    nResponses.stable.size = sum(sum(nSizeKernels(conditionLabels==0)));
     nResponses.stable.sizeUp = sum(sum(nSizeKernelsUp(conditionLabels==0)));
     nResponses.stable.sizeDown = sum(sum(nSizeKernelsDown(conditionLabels==0)));
     save(details.analysis.behav.nResponses, 'nResponses');

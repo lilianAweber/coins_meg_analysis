@@ -27,6 +27,8 @@ options.behav.flagReactionTimes = 1;
 
 options.behav.fsample = 60;
 options.behav.movAvgWin = 100;
+options.behav.minResponseDistance = 20;
+options.behav.minStepSize = 10;
 options.behav.kernelPreSamples = 2.5*options.behav.fsample;
 options.behav.kernelPostSamples = 1*options.behav.fsample;
 options.behav.flagBaselineCorrectKernels = 0;
