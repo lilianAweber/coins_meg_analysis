@@ -8,15 +8,17 @@ plotCols{2} = [col.volatile; col.volatile/2];
 data = cell(2,1);
 for iSes = 1:size(perform,1)
     for iBlock = 1: size(perform,2)
-        data{perform{iSes, iBlock}.volatility+1} = ...
-            [data{perform{iSes, iBlock}.volatility+1} ...
-            perform{iSes, iBlock}.(fieldName)];
+        if ~isempty(perform{iSes, iBlock})
+            data{perform{iSes, iBlock}.volatility+1} = ...
+                [data{perform{iSes, iBlock}.volatility+1} ...
+                perform{iSes, iBlock}.(fieldName)];
+        end
     end
 end
 
 fh = figure;
 for iVol = 1:2
-    for iSes = 1: numel(data{1})
+    for iSes = 1: numel(data{iVol})
         ph(iVol) = plot(iSes, data{iVol}(iSes), 'o', ...
             'color', plotCols{iVol}(1, :), ...
             'MarkerFaceColor', plotCols{iVol}(1, :));
