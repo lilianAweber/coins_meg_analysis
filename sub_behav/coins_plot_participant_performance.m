@@ -13,7 +13,7 @@ end
 fh = figure;
 for iField = 1:numel(subFieldNames)
     [volValues, staValues, ~, p] = coins_compare_performance_across_conditions(perform, subFieldNames{iField});
-    subplot(4, 6, iField)
+    subplot(5, 6, iField)
     plot(1, volValues, 'o'); 
     hold on;
     plot(2, staValues, 'o');

@@ -15,6 +15,10 @@ if sum(abs(shield-laser)) > sum(abs(shield-(laser+2*pi)))
     trueMean = trueMean + 2*pi;
 end
 
+if sum(abs(shield-trueMean)) > sum(abs(shield-(trueMean+2*pi)))
+    trueMean = trueMean + 2*pi;
+end
+
 %predictionError = mod(blockData.laserRotation-blockData.shieldRotation+180,360)-180;
 predictionError = laser-shield;
 absPE = abs(predictionError);

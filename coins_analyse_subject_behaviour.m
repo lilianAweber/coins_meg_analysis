@@ -45,8 +45,18 @@ excludedBlocks = details.excludedBlocks;
 for iEx = 1: size(excludedBlocks, 1)
     perform{excludedBlocks(iEx, 1), excludedBlocks(iEx, 2)} = [];
 end
-fh = coins_plot_participant_performance(perform);
-savefig(fh, details.analysis.behav.performancePlot);
+if options.behav.flagPerformance
+    fh = coins_plot_participant_performance(perform);
+    savefig(fh, details.analysis.behav.performancePlot);
+    fh = coins_plot_performance_overview(perform, 'reward');
+    savefig(fh, details.analysis.behav.performRewardFig);
+    fh = coins_plot_performance_overview(perform, 'meanPosPE');
+    savefig(fh, details.analysis.behav.performAvgPeFig);
+    fh = coins_plot_performance_overview(perform, 'meanDiff2mean');
+    savefig(fh, details.analysis.behav.performAvgDevFromMeanFig);
+    
+    close all
+end
 
 %% Integration kernels (simple averaging method)
 if options.behav.flagKernels

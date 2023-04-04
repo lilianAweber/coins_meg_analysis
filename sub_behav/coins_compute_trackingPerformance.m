@@ -13,8 +13,29 @@ if sum(abs(shield-laser)) > sum(abs(shield-(laser+2*pi)))
     laser = laser + 2*pi;
     trueMean = trueMean + 2*pi;
 end
+if sum(abs(shield-trueMean)) > sum(abs(shield-(trueMean+2*pi)))
+    trueMean = trueMean + 2*pi;
+end
 trueVariance = blockData.trueVariance*pi/180;
 shieldWidth = blockData.shieldDegrees*pi/180;
+
+% replace all samples until the first hit (participant catches laser for
+% the first time) with NaNs
+predictionError = mod(blockData.laserRotation-blockData.shieldRotation+180,360)-180;
+tolArea = blockData.shieldDegrees(1)/2;
+smp2excl = [];
+for iSmp = 1:numel(predictionError)
+    if abs(predictionError(iSmp)) > tolArea
+        smp2excl = [smp2excl iSmp];
+    else
+        break
+    end
+end
+shield(smp2excl) = [];
+laser(smp2excl) = [];
+trueMean(smp2excl) = [];
+trueVariance(smp2excl) = [];
+shieldWidth(smp2excl) = [];
 
 %% Collect raw and derived stimulus
 % stimulus and generating stats
@@ -49,7 +70,11 @@ perf.position       = shield;
 perf.positionPE     = laser-shield;
 perf.overallPosPE   = sum(abs(perf.positionPE));
 perf.diff2genMean   = trueMean-shield;
+perf.meanPosPE      = mean(abs(perf.positionPE));
+perf.medianPosPE    = median(abs(perf.positionPE));
 perf.sumDiff2mean   = sum(abs(perf.diff2genMean));
+perf.meanDiff2mean  = mean(abs(perf.diff2genMean));
+perf.medianDiff2mean= median(abs(perf.diff2genMean));
 perf.nMoveOnsets    = sum(leftTurnOnsets) + sum(rightTurnOnsets);
 perf.nMoveFrames    = sum(isShieldMovement);
 perf.overallMove    = sum(abs(shield1stDeriv));
