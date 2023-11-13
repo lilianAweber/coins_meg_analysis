@@ -8,12 +8,13 @@ function options = coins_options
 options.codeDir = fileparts(mfilename('fullpath'));
 % This is the base root for both raw data and analysis:
 %options.mainDir = '/media/lil/copyCrdk/COINS';
-options.mainDir = '/home/lil/projects/ccn/ContinuousValue/rotation/COINS';
+%options.mainDir = '/home/lil/projects/ccn/ContinuousValue/rotation/COINS';
+options.mainDir = '/Users/lilian/Projects/COINS/';
 options.rawDir = fullfile(options.mainDir, 'rawData');
 options.workDir = fullfile(options.mainDir, 'analysis');
 %%%--------------------------------------------------------------------%%%
 
-options.subjectIDs = [1:9];
+options.subjectIDs = [1:22];
 options.pilotIDs = {'Ryan', 'Caroline', 'Karen', 'CarolineY'};
 
 options.conditionLabels = {'Stable', 'Volatile'};
@@ -29,7 +30,7 @@ options.behav.fsample = 60;
 options.behav.movAvgWin = 100;
 options.behav.minResponseDistance = 20;
 options.behav.minStepSize = 10;
-options.behav.kernelPreSamples = 2.5*options.behav.fsample;
+options.behav.kernelPreSamples = 6*options.behav.fsample;%2.5*options.behav.fsample;
 options.behav.kernelPostSamples = 1*options.behav.fsample;
 options.behav.flagBaselineCorrectKernels = 0;
 options.behav.nSamplesKernelBaseline = 1.5*options.behav.fsample;

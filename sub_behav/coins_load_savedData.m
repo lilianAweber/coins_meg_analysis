@@ -1,4 +1,4 @@
-function savedData = coins_load_savedData( filename )
+function savedData = coins_load_savedData( fileName, dataFlag )
 %COINS_LOAD_SAVEDDATA Loads in a csv spreadsheet of one session of one
 %participant in the COINS study.
 
@@ -22,9 +22,14 @@ startRow = 2;
 % column14: eyepositionX - string (%s)
 % We are currently treating the eyeposition as a string due to unfortunate
 % formatting.
-formatSpec = '%f%f%f%f%f%C%f%C%f%f%f%f%s%s%[^\n\r]';
+switch dataFlag
+    case 'initial'
+        formatSpec = '%f%f%f%f%f%C%f%C%f%f%f%f%s%s%[^\n\r]';
+    case 'later'
+        formatSpec = '[%f%f%f%f%f%C%f%C%f%f%f%f%s%s%[^\n\r]';
+end
 
-fileID = fopen(filename,'r');
+fileID = fopen(fileName,'r');
 dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'TextType', ...
     'string', 'EmptyValue', NaN, 'HeaderLines', startRow-1, 'ReturnOnError', ...
     false, 'EndOfLine', '\r\n');
@@ -37,4 +42,14 @@ savedData = table(dataArray{1:end-1}, 'VariableNames', ...
     'triggerValue','trueMean','trueVariance','volatility',...
     'eyepositionX','eyepositionY'});
 
+
+%savedData = [];
+% opts = detectImportOptions(fileName);
+% opts.VariableNamesLine = 1;
+% savedData = readtable(fileName, opts);
+% 
+% varNames = savedData.Properties.VariableNames;
+% varNames{14} = 'eyePositionY';
+% varNames{13} = 'eyePositionX';
+% savedData.Properties.VariableNames = varNames;
 end

@@ -1,4 +1,4 @@
-function coins_analyse_subject_reactionTimes( subID, options )
+function fh = coins_analyse_subject_reactionTimes( subID, options )
 %COINS_ANALYSE_SUBJECT_REACTIONTIMES Collect responses after mean jumps for
 %all blocks of one participant and plot them
 
@@ -65,42 +65,49 @@ save(details.analysis.behav.movements, 'staJumps', 'volJumps', 'staCounts', 'vol
 % the distance travelled by the 1) first response, 2) longest response, and
 % 3) sum of all responses within 2.5s, per jump size and split into sta/vol
 
-figure;
-subplot(4, 2, 1)
+fh = figure;
+ax1 = subplot(4, 2, 1);
 title('N responses within 2.5s - stable blocks')
 h1 = coins_plot_rt_subplots( staJumps, staCounts, 0 );
 
-subplot(4, 2, 2)
+ax2 = subplot(4, 2, 2);
 title('N responses within 2.5s - volatile blocks')
 h2 = coins_plot_rt_subplots( volJumps, volCounts, false );
 
-subplot(4, 2, 3)
+linkaxes([ax1 ax2],'xy')
+
+ax3 = subplot(4, 2, 3);
 title('Distance by 1st response - stable blocks')
 [h3, p] = coins_plot_rt_subplots( staJumps, staDists(:,1), 1 );
 legend(p, 'distance to travel')
 
-subplot(4, 2, 4)
+ax4 = subplot(4, 2, 4);
 title('Distance by 1st response - volatile blocks')
 h4 = coins_plot_rt_subplots( volJumps, volDists(:,1), 1 );
 
-subplot(4, 2, 5)
+linkaxes([ax3 ax4],'xy')
+
+ax5 = subplot(4, 2, 5);
 title('Longest distance - stable blocks')
 h5 = coins_plot_rt_subplots( staJumps, max(staDists,[],2), 1 );
 
-subplot(4, 2, 6)
+ax6 = subplot(4, 2, 6);
 title('Longest distance - volatile blocks')
 h6 = coins_plot_rt_subplots( volJumps, max(volDists,[],2), 1 );
 
-subplot(4, 2, 7)
-title('Total distance within 2.5s - volatile blocks')
+linkaxes([ax5 ax6],'xy')
+
+ax7 = subplot(4, 2, 7);
+title('Total distance within 2.5s - stable blocks')
 h7 = coins_plot_rt_subplots( staJumps, nansum(staDists,2), 1 );
 xlabel('jump size (radians)')
 
-subplot(4, 2, 8)
-title('Total distance within 2.5s - stable blocks')
+ax8 = subplot(4, 2, 8);
+title('Total distance within 2.5s - volatile blocks')
 h8 = coins_plot_rt_subplots( volJumps, nansum(volDists,2), 1 );
 xlabel('jump size (radians)')
 
+linkaxes([ax7 ax8],'xy')
 
 
 end

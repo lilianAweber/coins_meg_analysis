@@ -71,7 +71,8 @@ if options.behav.flagKernels
                 nKernels(iSess, iBlock, :) = 0;
             else
                 % compute integration kernels
-                [avgKernels(iSess, iBlock, :, :), nKernels(iSess, iBlock, :)] = ...
+                [avgKernels(iSess, iBlock, :, :), nKernels(iSess, iBlock, :), ...
+                    blockMoves(iSess, iBlock)] = ...
                     coins_compute_blockKernels(blockData, options);
             end
             
@@ -86,7 +87,9 @@ if options.behav.flagKernels
             end
         end
     end
-    save(details.analysis.behav.blockKernels, 'avgKernels', 'nKernels', 'volKernels', 'staKernels');
+    save(details.analysis.behav.blockKernels, 'avgKernels', 'nKernels', ...
+        'volKernels', 'staKernels');
+    save(details.analysis.behav.blockMoves, 'blockMoves');
     
     % Compute number of responses (as used for the kernels)
     % I think this is duplicate of what we do in the performance script
@@ -591,7 +594,10 @@ savefig(fh, details.analysis.behav.adjustJumpSizeVolatilityFig);
 %}
 %% Post mean jump reaction times
 if options.behav.flagReactionTimes
-    coins_analyse_subject_reactionTimes( subID, options );
+    fh = coins_analyse_subject_reactionTimes( subID, options );
+    savefig(fh, details.analysis.behav.rtFig)
 end
+
+close all
 
 end

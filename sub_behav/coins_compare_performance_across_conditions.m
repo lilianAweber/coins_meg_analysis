@@ -3,7 +3,7 @@ function [ volValues, staValues, h, p, ci, stats ] = ...
 
 volValues = [];
 staValues = [];
-for iSess = 1: 4
+for iSess = 1: size(perform,1)
     for iBlock = 1:4
         if isfield(perform{iSess,iBlock}, subFieldName)
             if perform{iSess,iBlock}.volatility == 1

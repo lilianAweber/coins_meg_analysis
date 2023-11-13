@@ -1,4 +1,4 @@
-function [ avgKernels, nKernels ] = coins_compute_blockKernels( blockData, options )
+function [ avgKernels, nKernels, blockMove ] = coins_compute_blockKernels( blockData, options )
 %COINS_COMPUTE_BLOCKKERNELS Computes integration kernels from signed
 %prediction errors (for shield movements) and absolute PEs (for shield size
 %updates)

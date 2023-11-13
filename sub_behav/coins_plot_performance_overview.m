@@ -16,6 +16,7 @@ for iSes = 1:size(perform,1)
     end
 end
 
+nBlocks = max(numel(data{1}),numel(data{2}));
 fh = figure;
 for iVol = 1:2
     for iSes = 1: numel(data{iVol})
@@ -29,9 +30,9 @@ end
 if ~strcmp(fieldName, 'reward')
     yline(0.1745)
 end
-legend([ph(1) ph(2)], 'stable', 'volatileN');
-xlim([0.5 iSes+0.5])
-xticks(1:iSes)
+legend([ph(1) ph(2)], 'stable', 'volatile');
+xlim([0.5 nBlocks+0.5])
+xticks(1:nBlocks)
 xlabel('block')
 ylabel(fieldName)
 title([fieldName ' across blocks'])

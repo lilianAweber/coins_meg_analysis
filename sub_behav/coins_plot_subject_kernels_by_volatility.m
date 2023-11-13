@@ -1,5 +1,5 @@
 function fh = coins_plot_subject_kernels_by_volatility( staKernels, ...
-    volKernels, nResponses, options )
+    volKernels, nResponses, details, options )
 
 col = coins_colours;
 
@@ -28,11 +28,15 @@ plot(timeAxis, stabKerns, 'color', col.stable)
 xlabel('time (s) around button press')
 ylabel('signed PE')
 yline(0)
-title('Average signed PEs leading up to shield movement onset')
+title([details.subjName ': Average signed PEs leading up to shield movement onset'])
 legend(['volatile blocks (N=' num2str(nResponses.volatile.move) ')'], ...
     ['stable blocks (N=' num2str(nResponses.stable.move) ')'], ...
     'location', 'northwest');
-
+%xLims = xlim;
+%yLims = ylim;
+%text(xLims(1)+0.5, mean(yLims)+3, details.subjName, "FontWeight","bold")
+%text(xLims(1)+0.5, mean(yLims), ['Median step size: ' num2str(median(steps.stepSizes))])
+%text(xLims(1)+0.5, mean(yLims)-3, ['Avg small/unified steps: ' num2str(mean(steps.smallSteps)) '/' num2str(mean(steps.unifSteps))])
 
 volaKernsUp = nanmean(squeeze(nanmean(volKernels(:, :, 5, :),1)),1);
 stabKernsUp = nanmean(squeeze(nanmean(staKernels(:, :, 5, :),1)),1);
