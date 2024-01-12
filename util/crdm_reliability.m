@@ -71,6 +71,7 @@ for iSample = 1: nSamples
     [R(iSample) R_bounds(iSample, :)] = icc21(squeeze(dataMatrix(:, :, iSample)));
 end
 bounds2 = [R-R_bounds(:,1) R_bounds(:,2)-R];
+%{
 figure;
 shadedErrorBar2(1:numel(R), R, bounds2, 'lineprops', '-b');
 
@@ -103,3 +104,4 @@ ylim([-maxLag maxLag]);
 ylabel('Best lag');
 xlabel('Subject number');
 title('Best lags BETWEEN subjects')
+%}
