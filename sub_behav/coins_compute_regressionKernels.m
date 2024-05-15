@@ -1,4 +1,5 @@
-function [ betas, nTrials, avgKernels, nKernels ] = ...
+function [ betas, nTrials, avgKernels, nKernels, ...
+    recentEvidenceUp, recentEvidenceDown ] = ...
     coins_compute_regressionKernels( blockData, options )
 %COINS_COMPUTE_REGRESSIONKERNELS Computes integration kernels from signed
 %prediction errors (for shield movements) and absolute PEs (for shield size
@@ -9,7 +10,6 @@ nSamplesBefore = options.behav.kernelPreSamplesEvi;
 
 %% Preparation
 predictionError = mod(blockData.laserRotation-blockData.shieldRotation+180,360)-180;
-%figure; plot(predictionError)
 % replace all samples until the first hit (participant catches laser for
 % the first time) with NaNs
 tolArea = unique(blockData.shieldDegrees)/2;
@@ -20,11 +20,7 @@ for iSmp = 1:numel(predictionError)
         break
     end
 end
-%figure; plot(predictionError)
 absPE = abs(predictionError);
-
-% mean-correct the PE
-%predictionError = predictionError - nanmean(predictionError);
 
 %% Shield movement kernels
 blockMove = coins_compute_blockMovements(blockData, options);
@@ -62,20 +58,19 @@ end
 moveKernels = [recentEvidenceLeft; -recentEvidenceRight];
 
 %% Shield size update kernels - work in progress
-%{
-%absPE = absPE - nanmean(absPE);
+recentEvidenceUp = [];
+recentEvidenceDown = [];
+
+absPE = absPE - nanmean(absPE);
 absPeTrace = [NaN absPE'];
 
 shieldSize1stDeriv = [0; diff(blockData.shieldDegrees)];
 shieldSizeUp = shieldSize1stDeriv > 0;
 shieldSizeDown = shieldSize1stDeriv < 0;
 
-changeInEvidence = [0; diff(blockData.laserRotation)];
-changeIdx = find(changeInEvidence);
-
-startLeft = blockMove.left.onsets;
-for iLeft = 1: numel(startLeft)
-    allPriorChanges = changeIdx(changeIdx<startLeft(iLeft));
+sizeUp = find(shieldSizeUp);
+for iUp = 1: numel(sizeUp)
+    allPriorChanges = changeIdx(changeIdx<sizeUp(iUp));
     if numel(allPriorChanges)>=nSamplesBefore
         recentChanges = allPriorChanges(end-nSamplesBefore+1:end);
         nonAvail = 0;
@@ -83,12 +78,12 @@ for iLeft = 1: numel(startLeft)
         recentChanges = allPriorChanges;
         nonAvail = nSamplesBefore-numel(allPriorChanges);
     end
-    recentEvidenceLeft(iLeft, :) = peTrace([ones(nonAvail,1); recentChanges+1]);
+    recentEvidenceUp(iUp, :) = absPeTrace([ones(nonAvail,1); recentChanges+1]);
 end
 
-startRight = blockMove.right.onsets;
-for iRight = 1: numel(startRight)
-    allPriorChanges = changeIdx(changeIdx<startRight(iRight));
+sizeDown = find(shieldSizeDown);
+for iDown = 1: numel(sizeDown)
+    allPriorChanges = changeIdx(changeIdx<sizeDown(iDown));
     if numel(allPriorChanges)>=nSamplesBefore
         recentChanges = allPriorChanges(end-nSamplesBefore+1:end);
         nonAvail = 0;
@@ -96,11 +91,11 @@ for iRight = 1: numel(startRight)
         recentChanges = allPriorChanges;
         nonAvail = nSamplesBefore-numel(allPriorChanges);
     end
-    recentEvidenceRight(iRight, :) = peTrace([ones(nonAvail,1); recentChanges+1]);
+    recentEvidenceDown(iDown, :) = absPeTrace([ones(nonAvail,1); recentChanges+1]);
 end
 
-moveKernels = [recentEvidenceLeft; -recentEvidenceRight];
-%}
+% the GLM for size updates needs to run across different blocks, otherwise
+% we have to few data points.
 
 %% Summarise
 % spit out average kernels for overall movements, left and right movements

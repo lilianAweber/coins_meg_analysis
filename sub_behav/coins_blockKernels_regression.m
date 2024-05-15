@@ -1,19 +1,30 @@
-function [ betasCon, nTrialsCon, avgKernelsCon, nKernelsCon, fh1, fh2 ] = ...
+function [ betasCon, nTrialsCon, fh ] = ...
     coins_blockKernels_regression( subData, excludedBlocks, options )
+%COINS_BLOCKKERNELS_REGRESSION Computes behavioural integration kernels
+%using regression from the data in subData, excluding blocks listed in
+%excludedBlocks
 
-% Go through data block-wise, extract kernels
+nSessions = max(subData.sessID);
+nBlocksPerSession = 4;
+nSamples = options.behav.kernelPreSamplesEvi;
+
+% count the number of blocks in each condition
 nBlocks = zeros(2,1);
-for iSess = 1: max(subData.sessID)
-    for iBlock = 1: 4
+
+betas = NaN(nSessions, nBlocksPerSession, nSamples);
+nTrials = NaN(nSessions, nBlocksPerSession);
+
+for iSess = 1: nSessions
+    for iBlock = 1: nBlocksPerSession
         blockData = subData(subData.sessID == iSess & subData.blockID == iBlock, :);
+        
         % check whether current block is excluded
         if ~isempty(excludedBlocks) && ismember([iSess iBlock], excludedBlocks, 'rows')
-            betas(iSess, iBlock, :) = NaN(1, options.behav.kernelPreSamplesEvi);
+            betas(iSess, iBlock, :) = NaN(1, nSamples);
             nTrials(iSess, iBlock) = 0;
         else
             % compute integration kernels using regression method
             [betas(iSess, iBlock, :), nTrials(iSess, iBlock)] ...
-                ...avgKernels(iBlock, :), nKernels(iBlock)] ...
                 = coins_compute_regressionKernels(blockData, options);
         end
        
@@ -22,15 +33,8 @@ for iSess = 1: max(subData.sessID)
         nBlocks(vol) = nBlocks(vol) + 1;
         betasCon{vol}(nBlocks(vol), :) = betas(iSess, iBlock, :);
         nTrialsCon{vol}(nBlocks(vol)) = nTrials(iSess, iBlock);
-        %avgKernelsCon{vol,sto}(nBlocks(vol,sto), :) = avgKernels(iBlock, :);
-        %nKernelsCon{vol,sto}(nBlocks(vol,sto)) = nKernels(iBlock);
     end
 end
-%fh1 = coins_plot_subject_kernels_by_volatility(avgKernelsCon, nKernelsCon, options);
-avgKernelsCon = [];
-nKernelsCon = [];
-fh1 = [];
-fh2 = coins_plot_subject_betas_by_volatility(betasCon, nTrialsCon, options);
-
+fh = coins_plot_subject_betas_by_volatility(betasCon, nTrialsCon, options);
 
 end
