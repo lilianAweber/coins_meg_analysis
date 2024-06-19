@@ -12,7 +12,7 @@ for iSub = 1: nSubjects
     if ~exist(details.analysis.behav.folder, 'dir')
         mkdir(details.analysis.behav.folder);
     end
-    %{
+    
     % Load behavioural data from csv spreadsheet
     subData = coins_load_subjectData(details);
     save(details.analysis.behav.responseData, 'subData');
@@ -23,13 +23,13 @@ for iSub = 1: nSubjects
     % Compute behavioural integration kernels using regression method
     coins_subjectKernels(details, options);
     close all
-    %}
+    
     % Same thing, but session-wise with noise effects
     coins_subjectKernels_sessionWise(details, options);
     close all
 
     % Compute post-mean jump adjustments per condition
-    %coins_subjectAdjustments(details, options);
+    coins_subjectAdjustments(details, options);
 
     % Analyse post mean jump reaction times - this is an old version of RT
     % analysis - we now look at adjustment-based RTs which can only be
